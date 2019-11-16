@@ -6,13 +6,18 @@ from train import args
 from utils import SSDAugmentation
 
 test_set = SIXrayDetection(XRAY_ROOT, image_sets=args.imagesetfile, transform=SSDAugmentation(voc['min_dim'],MEANS))
-img_id = '00000009'
+img_id = 12
 image = test_set.pull_image(img_id)
 annos = test_set.pull_annotation(img_id)
 
 for anno in annos:
     cv2.rectangle(image, anno[1], anno[2], (0, 0, 255), 2)
-    cv2.putText(image, 'P_Battery_Core', (int(631), int(700) - 5), 0,
+    name = anno[0]
+    if name == '带电芯充电宝':
+        name = 'Core'
+    else:
+        name = 'Core_Less'
+    cv2.putText(image, name, (anno[1][0], anno[1][1] - 5), 0,
                 0.6, (0, 0, 255), 2)
 
 plt.figure(figsize=(10, 10))

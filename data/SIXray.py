@@ -163,6 +163,7 @@ class SIXrayDetection(data.Dataset):
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
         return torch.from_numpy(img).permute(2, 0, 1), target, height, width, og_img
 
+    # 根据ID 获取图片
     def pull_image(self, index):
         '''Returns the original image object at index in PIL form
 
@@ -174,11 +175,12 @@ class SIXrayDetection(data.Dataset):
         Return:
             PIL img
         '''
-        img_id = self.ids[self.ids.index(index)]
+        img_id = self.ids[index]
         return cv2.imread(self._imgpath % img_id, cv2.IMREAD_COLOR)
 
+    # 根据ID 获取标注
     def pull_annotation(self, index):
-        img_id = self.ids[self.ids.index(index)]
+        img_id = self.ids[index]
         annos = []
         # 读取标注文件
         with open(self._annopath % img_id, "r", encoding='utf-8') as file:
@@ -186,7 +188,9 @@ class SIXrayDetection(data.Dataset):
             for line in lines:
                 temp = line.split()
                 fileName = temp[1]
-                img_tuple = (fileName, (temp[2], temp[3]), (temp[4], temp[5]))
+                if fileName != '带电芯充电宝' and fileName != '不带电芯充电宝':
+                    continue
+                img_tuple = (fileName, (int(temp[2]), int(temp[3])), (int(temp[4]), int(temp[5])))
                 annos.append(img_tuple)
         return annos
 
