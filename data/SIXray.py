@@ -194,6 +194,35 @@ class SIXrayDetection(data.Dataset):
                 annos.append(img_tuple)
         return annos
 
+    def pull_anno(self, index):
+        '''Returns the original annotation of image at index
+
+        Note: not using self.__getitem__(), as any transformations passed in
+        could mess up this functionality.
+
+        Argument:
+            index (int): index of img to get annotation of
+        Return:
+            list:  [img_id, [(label, bbox coords),...]]
+                eg: ('001718', [('dog', (96, 13, 438, 332))])
+        '''
+        img_id = self.ids[index]
+        annos = []
+        # 读取标注文件
+        with open(self._annopath % img_id, "r", encoding='utf-8') as file:
+            lines = file.readlines()
+            for line in lines:
+                temp = line.split()
+                file_name = temp[1]
+                if file_name != '带电芯充电宝' and file_name != '不带电芯充电宝':
+                    continue
+                if file_name == '带电芯充电宝':
+                    file_name = 'Core'
+                else:
+                    file_name = 'Core_Less'
+                img_tuple = [file_name, (int(temp[2]), int(temp[3]), int(temp[4]), int(temp[5]))]
+                annos.append(img_tuple)
+        return img_id, annos
 
 class BaseTransform:
     def __init__(self, size, mean):

@@ -5,6 +5,7 @@ data_sets/coreless_3000/
 base_battery_core_coreless_bs8_V/
 ssd300_120000/
 weights/
+eval/
 *.py[cod]
 *$py.class
 

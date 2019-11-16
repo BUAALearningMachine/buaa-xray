@@ -37,9 +37,9 @@ parser.add_argument('--start_iter', default=0, type=int,
                     help='Resume training at this iter')
 parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers used in dataloading')
-parser.add_argument('--cuda', default=False, type=str2bool,
+parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
-parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float,
                     help='Momentum value for optim')
@@ -86,12 +86,12 @@ def train():
     elif args.dataset == 'VOC':
         if args.dataset_root == COCO_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
-        cfg = voc
+        cfg = x_ray
         # dataset = VOCDetection(root=args.dataset_root,
         #                        transform=SSDAugmentation(cfg['min_dim'],
         #                                                  MEANS))
-        dataset = SIXrayDetection(root=args.dataset_root, image_sets=args.imagesetfile, transform=SSDAugmentation(cfg['min_dim'],
-                                                         MEANS))
+        dataset = SIXrayDetection(root=args.dataset_root, image_sets=args.imagesetfile,
+                                  transform=BaseTransform(cfg['min_dim'], MEANS))
     if args.visdom:
         import visdom
         viz = visdom.Visdom()
@@ -200,8 +200,7 @@ def train():
         # 迭代1000次
         if iteration != 0 and iteration % 1000 == 0:
             print('Saving state, iter:', iteration)
-            torch.save(ssd_net.state_dict(), 'weights/ssd300_COCO_' +
-                       repr(iteration) + '.pth')
+            torch.save(ssd_net.state_dict(), 'weights/ssd300_xray_' + repr(iteration) + '.pth')
     torch.save(ssd_net.state_dict(),
                args.save_folder + '' + args.dataset + '.pth')
 

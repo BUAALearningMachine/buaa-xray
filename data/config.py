@@ -26,6 +26,22 @@ voc = {
     'name': 'VOC',
 }
 
+x_ray = {
+    # num_classes 为待分类数 + 1 也就是3
+    'num_classes': 3,
+    'lr_steps': (80000, 100000, 120000),
+    'max_iter': 80,
+    'feature_maps': [38, 19, 10, 5, 3, 1],
+    'min_dim': 300,
+    'steps': [8, 16, 32, 64, 100, 300],
+    'min_sizes': [30, 60, 111, 162, 213, 264],
+    'max_sizes': [60, 111, 162, 213, 264, 315],
+    'aspect_ratios': [[2], [2, 3], [2, 3], [2, 3], [2], [2]],
+    'variance': [0.1, 0.2],
+    'clip': True,
+    'name': 'X_RAY',
+}
+
 coco = {
     'num_classes': 201,
     'lr_steps': (280000, 360000, 400000),
