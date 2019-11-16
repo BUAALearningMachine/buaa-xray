@@ -11,13 +11,16 @@ import torch
 import torch.utils.data as data
 import cv2
 import numpy as np
+import os
+import re
 
 # 两类需要识别
 SIXray_CLASSES = (
     '带电芯充电宝', '不带电芯充电宝'
 )
 
-XRAY_ROOT = osp.abspath('./core_3000')
+XRAY_ROOT = osp.abspath('./data_sets/core_3000')
+
 
 class SIXrayAnnotationTransform(object):
     """Transforms a VOC annotation into a Tensor of bbox coords and label index
@@ -122,12 +125,9 @@ class SIXrayDetection(data.Dataset):
         self.name = dataset_name
         self._annopath = osp.join('%s' % self.root, 'Annotation', 'core_battery%s.txt')
         self._imgpath = osp.join('%s' % self.root, 'Image', 'core_battery%s.jpg')
-        self.ids = list()
+        self.ids = list_ids(XRAY_ROOT, "jpg")
 
-        with open(self.image_set, 'r') as f:
-            lines = f.readlines()
-            for line in lines:
-                self.ids.append(line.strip('\n'))
+        print(self.ids)
 
     def __getitem__(self, index):
         im, gt, h, w, og_im = self.pull_item(index)
@@ -176,3 +176,16 @@ def base_transform(image, size, mean):
     x -= mean
     x = x.astype(np.float32)
     return x
+
+
+def list_ids(root, allTypes):
+    res = []
+    re_img_id = re.compile(r'(\D+)(\d+).(\w+)')
+    types = allTypes.split(",")
+    for root_temp, dirs, files in os.walk(root, topdown=True):
+        for name in files:
+            match = re_img_id.match(name)
+            if match:
+                if match.groups()[2] in types:
+                    res.append(match.groups()[1])
+    return res
