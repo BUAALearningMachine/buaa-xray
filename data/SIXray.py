@@ -138,6 +138,8 @@ class SIXrayDetection(data.Dataset):
         return len(self.ids)
 
     def pull_item(self, index):
+        # img_id = str(index).rjust(8, '0')
+        # img_id = self.ids[self.ids.index(index)]
         img_id = self.ids[index]
         target = self._annopath % img_id  # 注释目录
         img = cv2.imread(self._imgpath % img_id)
@@ -160,6 +162,33 @@ class SIXrayDetection(data.Dataset):
             # img = img.transpose(a2, 0, a1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
         return torch.from_numpy(img).permute(2, 0, 1), target, height, width, og_img
+
+    def pull_image(self, index):
+        '''Returns the original image object at index in PIL form
+
+        Note: not using self.__getitem__(), as any transformations passed in
+        could mess up this functionality.
+
+        Argument:
+            index (int): index of img to show
+        Return:
+            PIL img
+        '''
+        img_id = self.ids[self.ids.index(index)]
+        return cv2.imread(self._imgpath % img_id, cv2.IMREAD_COLOR)
+
+    def pull_annotation(self, index):
+        img_id = self.ids[self.ids.index(index)]
+        annos = []
+        # 读取标注文件
+        with open(self._annopath % img_id, "r", encoding='utf-8') as file:
+            lines = file.readlines()
+            for line in lines:
+                temp = line.split()
+                fileName = temp[1]
+                img_tuple = (fileName, (temp[2], temp[3]), (temp[4], temp[5]))
+                annos.append(img_tuple)
+        return annos
 
 
 class BaseTransform:
