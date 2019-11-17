@@ -19,7 +19,7 @@ SIXray_CLASSES = (
     '带电芯充电宝', '不带电芯充电宝'
 )
 
-XRAY_ROOT = osp.abspath('./data_sets/core_3000')
+XRAY_ROOT = osp.abspath('./data_sets/3000')
 
 
 class SIXrayAnnotationTransform(object):
@@ -123,8 +123,8 @@ class SIXrayDetection(data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.name = dataset_name
-        self._annopath = osp.join('%s' % self.root, 'Annotation', 'core_battery%s.txt')
-        self._imgpath = osp.join('%s' % self.root, 'Image', 'core_battery%s.jpg')
+        self._annopath = osp.join('%s' % self.root, 'Annotation', 'battery_%s.txt')
+        self._imgpath = osp.join('%s' % self.root, 'Image', 'battery_%s.jpg')
         self.ids = list_ids(XRAY_ROOT, "jpg")
 
         print(self.ids)
@@ -138,8 +138,6 @@ class SIXrayDetection(data.Dataset):
         return len(self.ids)
 
     def pull_item(self, index):
-        # img_id = str(index).rjust(8, '0')
-        # img_id = self.ids[self.ids.index(index)]
         img_id = self.ids[index]
         target = self._annopath % img_id  # 注释目录
         img = cv2.imread(self._imgpath % img_id)
@@ -216,13 +214,10 @@ class SIXrayDetection(data.Dataset):
                 file_name = temp[1]
                 if file_name != '带电芯充电宝' and file_name != '不带电芯充电宝':
                     continue
-                if file_name == '带电芯充电宝':
-                    file_name = 'Core'
-                else:
-                    file_name = 'Core_Less'
                 img_tuple = [file_name, (int(temp[2]), int(temp[3]), int(temp[4]), int(temp[5]))]
                 annos.append(img_tuple)
         return img_id, annos
+
 
 class BaseTransform:
     def __init__(self, size, mean):
