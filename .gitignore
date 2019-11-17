@@ -6,6 +6,8 @@ base_battery_core_coreless_bs8_V/
 ssd300_120000/
 weights/
 eval/
+3000/
+3000_test/
 *.py[cod]
 *$py.class
 

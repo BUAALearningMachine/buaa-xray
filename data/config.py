@@ -30,7 +30,7 @@ x_ray = {
     # num_classes 为待分类数 + 1 也就是3
     'num_classes': 3,
     'lr_steps': (80000, 100000, 120000),
-    'max_iter': 2000,
+    'max_iter': 120000,
     'feature_maps': [38, 19, 10, 5, 3, 1],
     'min_dim': 300,
     'steps': [8, 16, 32, 64, 100, 300],
