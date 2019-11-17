@@ -44,7 +44,7 @@ class SIXrayAnnotationTransform(object):
         # 记录大类数量
         self.type_sum_dict = {}
 
-    def __call__(self, target, width, height, idx):
+    def __call__(self, target, width, height):
         """
         Arguments:
             target (annotation) : the target annotation to be made usable
@@ -70,30 +70,17 @@ class SIXrayAnnotationTransform(object):
             # 只读两类
             if name != '带电芯充电宝' and name != '不带电芯充电宝':
                 continue
-            xmin = int(temp[2]) / width
-            # 只读取V视角的 ? 为什么只读V视角
-            if xmin > 1:
-                continue
-            if xmin < 0:
-                xmin = 0
-            ymin = int(temp[3]) / height
-            if ymin < 0:
-                ymin = 0
-            xmax = int(temp[4]) / width
-            if xmax > 1:  # 是这么个意思吧？
-                xmax = 1
-            ymax = int(temp[5]) / height
-            if ymax > 1:
-                ymax = 1
-            bndbox.append(xmin)
-            bndbox.append(ymin)
-            bndbox.append(xmax)
-            bndbox.append(ymax)
+
+            pts = ['xmin', 'ymin', 'xmax', 'ymax']
+            for i, pt in enumerate(pts):
+                cur_pt = int(temp[i + 2]) - 1
+                # scale height or width
+                cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
+                bndbox.append(cur_pt)
+
             label_idx = self.class_to_ind[name]
             bndbox.append(label_idx)
-            res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
-        if len(res) == 0:
-            return [[0, 0, 0, 0, 3]]
+            res += [bndbox]
         return res
 
 
@@ -130,8 +117,7 @@ class SIXrayDetection(data.Dataset):
         print(self.ids)
 
     def __getitem__(self, index):
-        im, gt, h, w, og_im = self.pull_item(index)
-
+        im, gt, h, w = self.pull_item(index)
         return im, gt
 
     def __len__(self):
@@ -147,10 +133,9 @@ class SIXrayDetection(data.Dataset):
             sys.exit(1)
 
         height, width, channels = img.shape
-        og_img = img
 
         if self.target_transform is not None:
-            target = self.target_transform(target, width, height, img_id)
+            target = self.target_transform(target, width, height)
 
         if self.transform is not None:
             target = np.array(target)
@@ -159,7 +144,7 @@ class SIXrayDetection(data.Dataset):
             img = img[:, :, (2, 1, 0)]
             # img = img.transpose(a2, 0, a1)
             target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
-        return torch.from_numpy(img).permute(2, 0, 1), target, height, width, og_img
+        return torch.from_numpy(img).permute(2, 0, 1), target, height, width
 
     # 根据ID 获取图片
     def pull_image(self, index):
@@ -205,18 +190,18 @@ class SIXrayDetection(data.Dataset):
                 eg: ('001718', [('dog', (96, 13, 438, 332))])
         '''
         img_id = self.ids[index]
-        annos = []
-        # 读取标注文件
-        with open(self._annopath % img_id, "r", encoding='utf-8') as file:
-            lines = file.readlines()
-            for line in lines:
-                temp = line.split()
-                file_name = temp[1]
-                if file_name != '带电芯充电宝' and file_name != '不带电芯充电宝':
-                    continue
-                img_tuple = [file_name, (int(temp[2]), int(temp[3]), int(temp[4]), int(temp[5]))]
-                annos.append(img_tuple)
-        return img_id, annos
+        anno = self._annopath % img_id
+        gt = self.target_transform(anno, 1, 1)
+
+        res = []
+        # gt = [[173.0, 100.0, 348.0, 350.0, 14] , [173.0, 100.0, 348.0, 350.0, 14]]
+        # 需要转换成 [('label_name', (96, 13, 438, 332))]
+        for tmp in gt:
+            label_idx = tmp[4]
+            label_name = SIXray_CLASSES[label_idx]
+            res.append([label_name, tmp[0:4]])
+
+        return img_id, res
 
 
 class BaseTransform:
