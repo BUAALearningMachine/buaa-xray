@@ -91,7 +91,7 @@ def train():
         #                        transform=SSDAugmentation(cfg['min_dim'],
         #                                                  MEANS))
         dataset = SIXrayDetection(root=args.dataset_root, image_sets=args.imagesetfile,
-                                  transform=BaseTransform(cfg['min_dim'], MEANS))
+                                  transform=SSDAugmentation(cfg['min_dim'], MEANS))
     if args.visdom:
         import visdom
         viz = visdom.Visdom()
