@@ -19,4 +19,5 @@
 +  Xinlong Wang, et al. "Repulsion Loss: Detecting Pedestrians in a Crowd." [CVPR2018](https://arxiv.org/abs/1711.07752). 
 +  [Pytorch-SSD](https://github.com/amdegroot/ssd.pytorch). 
 +  [repulsion_loss_ssd](https://github.com/bailvwangzi/repulsion_loss_ssd)
-+  Wei Liu, et al. "SSD: Single Shot MultiBox Detector." [ECCV2016](http://arxiv.org/abs/1512.02325). 
++  Wei Liu, et al. "SSD: Single Shot MultiBox Detector." [ECCV2016](http://arxiv.org/abs/1512.02325).
++  [目标检测中的遮挡问题及优化](https://blog.csdn.net/diligent_321/article/details/86294403) 
