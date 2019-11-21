@@ -96,7 +96,7 @@ class MultiBoxLoss(nn.Module):
         loc_g = loc_g[pos_idx].view(-1, 4)
         priors = priors.expand_as(pos_idx)
         priors = priors[pos_idx].view(-1, 4)
-        loss_l = F.smooth_l1_loss(loc_p, loc_t, size_average=False)
+        loss_l = F.smooth_l1_loss(loc_p, loc_t, reduction='sum')
         repul_loss = RepulsionLoss(sigma=0.)
         loss_l_repul = repul_loss(loc_p, loc_g, priors)
 

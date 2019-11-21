@@ -19,8 +19,8 @@ SIXray_CLASSES = (
     '带电芯充电宝', '不带电芯充电宝'
 )
 
-XRAY_ROOT = osp.abspath('./data_sets/3000')
-
+TRAIN_SET_PATH = osp.join(osp.abspath('.'), 'data_sets', '6000')
+TEST_SET_PATH = osp.join(osp.abspath('.'), 'data_sets', '6000_test')
 
 class SIXrayAnnotationTransform(object):
     """Transforms a VOC annotation into a Tensor of bbox coords and label index
@@ -112,9 +112,7 @@ class SIXrayDetection(data.Dataset):
         self.name = dataset_name
         self._annopath = osp.join('%s' % self.root, 'Annotation', 'battery_%s.txt')
         self._imgpath = osp.join('%s' % self.root, 'Image', 'battery_%s.jpg')
-        self.ids = list_ids(XRAY_ROOT, "jpg")
-
-        print(self.ids)
+        self.ids = list_ids(root, "jpg")
 
     def __getitem__(self, index):
         im, gt, h, w = self.pull_item(index)
