@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from data import coco as cfg
 from ..box_utils import match, log_sum_exp
+from .repulsion_loss import RepulsionLoss
 
 
 class MultiBoxLoss(nn.Module):
@@ -65,18 +67,22 @@ class MultiBoxLoss(nn.Module):
 
         # match priors (default boxes) and ground truth boxes
         loc_t = torch.Tensor(num, num_priors, 4)
+        loc_g = torch.Tensor(num, num_priors, 4)
         conf_t = torch.LongTensor(num, num_priors)
         for idx in range(num):
+            predicts = loc_data[idx].data
             truths = targets[idx][:, :-1].data
             labels = targets[idx][:, -1].data
             defaults = priors.data
-            match(self.threshold, truths, defaults, self.variance, labels,
-                  loc_t, conf_t, idx)
+            match(self.threshold, predicts, truths, defaults, self.variance, labels,
+                  loc_t, loc_g, conf_t, idx)
         if self.use_gpu:
             loc_t = loc_t.cuda()
+            loc_g = loc_g.cuda()
             conf_t = conf_t.cuda()
         # wrap targets
         loc_t = Variable(loc_t, requires_grad=False)
+        loc_g = Variable(loc_g, requires_grad=False)
         conf_t = Variable(conf_t, requires_grad=False)
 
         pos = conf_t > 0
@@ -87,7 +93,12 @@ class MultiBoxLoss(nn.Module):
         pos_idx = pos.unsqueeze(pos.dim()).expand_as(loc_data)
         loc_p = loc_data[pos_idx].view(-1, 4)
         loc_t = loc_t[pos_idx].view(-1, 4)
-        loss_l = F.smooth_l1_loss(loc_p, loc_t, reduction='sum')
+        loc_g = loc_g[pos_idx].view(-1, 4)
+        priors = priors.expand_as(pos_idx)
+        priors = priors[pos_idx].view(-1, 4)
+        loss_l = F.smooth_l1_loss(loc_p, loc_t, size_average=False)
+        repul_loss = RepulsionLoss(sigma=0.)
+        loss_l_repul = repul_loss(loc_p, loc_g, priors)
 
         # Compute max conf across batch for hard negative mining
         batch_conf = conf_data.view(-1, self.num_classes)
@@ -113,5 +124,6 @@ class MultiBoxLoss(nn.Module):
 
         N = num_pos.data.sum()
         loss_l = loss_l.double() / N
+        loss_l_repul = loss_l_repul.double() / N
         loss_c = loss_c.double() / N
-        return loss_l, loss_c
+        return loss_l, loss_l_repul, loss_c

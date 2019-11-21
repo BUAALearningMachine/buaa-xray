@@ -1,5 +1,6 @@
 from data import *
 from data.SIXray import SIXrayDetection, XRAY_ROOT
+from layers.modules.repulsion_loss import RepulsionLoss
 from utils.augmentations import SSDAugmentation
 from layers.modules import MultiBoxLoss
 from ssd import build_ssd
@@ -24,36 +25,21 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With Pytorch')
 train_set = parser.add_mutually_exclusive_group()
-parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO'],type=str, help='VOC or COCO')
-parser.add_argument('--dataset_root', default=XRAY_ROOT,
-                    help='Dataset root directory path')
-parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
-                    help='Pretrained base model')
-parser.add_argument('--batch_size', default=32, type=int,
-                    help='Batch size for training')
-parser.add_argument('--resume', default=None, type=str,
-                    help='Checkpoint state_dict file to resume training from')
-parser.add_argument('--start_iter', default=0, type=int,
-                    help='Resume training at this iter')
-parser.add_argument('--num_workers', default=4, type=int,
-                    help='Number of workers used in dataloading')
-parser.add_argument('--cuda', default=True, type=str2bool,
-                    help='Use CUDA to train model')
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
-                    help='initial learning rate')
-parser.add_argument('--momentum', default=0.9, type=float,
-                    help='Momentum value for optim')
-parser.add_argument('--weight_decay', default=5e-4, type=float,
-                    help='Weight decay for SGD')
-parser.add_argument('--gamma', default=0.1, type=float,
-                    help='Gamma update for SGD')
-parser.add_argument('--visdom', default=False, type=str2bool,
-                    help='Use visdom for loss visualization')
-parser.add_argument('--save_folder', default='weights/',
-                    help='Directory for saving checkpoint models')
-parser.add_argument('--imagesetfile',
-                    default=os.path.abspath('./img_ids.txt'), type=str,
-                    help='imageset file path to open')
+parser.add_argument('--dataset', default='XRay', type=str)
+parser.add_argument('--dataset_root', default=XRAY_ROOT, help='Dataset root directory path')
+parser.add_argument('--basenet', default='vgg16_reducedfc.pth', help='Pretrained base model')
+parser.add_argument('--batch_size', default=32, type=int, help='Batch size for training')
+parser.add_argument('--resume', default=None, type=str, help='Checkpoint state_dict file to resume training from')
+parser.add_argument('--start_iter', default=0, type=int, help='Resume training at this iter')
+parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--cuda', default=True, type=str2bool, help='Use CUDA to train model')
+parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float, help='initial learning rate')
+parser.add_argument('--momentum', default=0.9, type=float, help='Momentum value for optim')
+parser.add_argument('--weight_decay', default=5e-4, type=float,  help='Weight decay for SGD')
+parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
+parser.add_argument('--visdom', default=False, type=str2bool, help='Use visdom for loss visualization')
+parser.add_argument('--save_folder', default='weights/', help='Directory for saving checkpoint models')
+parser.add_argument('--imagesetfile', default=os.path.abspath('./img_ids.txt'), type=str, help='imageset file path to open')
 args = parser.parse_args()
 
 
@@ -130,6 +116,7 @@ def train():
     # loss counters
     loc_loss = 0
     conf_loss = 0
+    repul_loss = 0
     epoch = 0
     print('Loading the dataset...')
 
@@ -159,6 +146,7 @@ def train():
             # reset epoch loss counters
             loc_loss = 0
             conf_loss = 0
+            repul_loss = 0
             epoch += 1
 
         if iteration in cfg['lr_steps']:
@@ -186,13 +174,14 @@ def train():
         out = net(images)
         # backprop
         optimizer.zero_grad()
-        loss_l, loss_c = criterion(out, targets)
-        loss = loss_l + loss_c
+        loss_l, loss_l_repul, loss_c = criterion(out, targets)
+        loss = loss_l + loss_c + loss_l_repul
         loss.backward()
         optimizer.step()
         t1 = time.time()
         loc_loss += loss_l.data
         conf_loss += loss_c.data
+        repul_loss += loss_l_repul.data
 
         if iteration % 10 == 0:
             print('timer: %.4f sec.' % (t1 - t0))
@@ -203,7 +192,7 @@ def train():
                             iter_plot, epoch_plot, 'append')
 
         # 迭代1000次
-        if iteration != 0 and iteration % 1000 == 0:
+        if iteration != 0 and iteration % 10000 == 0:
             print('Saving state, iter:', iteration)
             torch.save(ssd_net.state_dict(), 'weights/ssd300_xray_' + repr(iteration) + '.pth')
     torch.save(ssd_net.state_dict(),
