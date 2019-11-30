@@ -3,10 +3,11 @@ from matplotlib import pyplot as plt
 import cv2
 from data.SIXray import SIXrayDetection, TRAIN_SET_PATH
 from train import args
-from utils import SSDAugmentation
+from utils.augmentations import SSDAugmentation
 
-test_set = SIXrayDetection(TRAIN_SET_PATH, image_sets=args.imagesetfile, transform=SSDAugmentation(voc['min_dim'],MEANS))
-img_id = 12
+test_set = SIXrayDetection(TRAIN_SET_PATH, image_sets=args.imagesetfile,
+                           transform=SSDAugmentation(x_ray['min_dim'], MEANS))
+img_id = 10
 image = test_set.pull_image(img_id)
 annos = test_set.pull_annotation(img_id)
 
