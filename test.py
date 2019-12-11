@@ -22,6 +22,9 @@ parser.add_argument('--cuda', default=True, type=bool,
                     help='Use cuda to train model')
 parser.add_argument('--xray_root', default=TEST_SET_PATH, help='Location of VOC root directory')
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")
+parser.add_argument('--image_folder', default=os.path.abspath('data_sets/core_3000/Image'), type=str)
+parser.add_argument('--annotation_folder', default=os.path.abspath('data_sets/core_3000/Annotation'), type=str)
+
 args = parser.parse_args()
 
 if args.cuda and torch.cuda.is_available():

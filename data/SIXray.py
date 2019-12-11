@@ -19,7 +19,7 @@ SIXray_CLASSES = (
     '带电芯充电宝', '不带电芯充电宝'
 )
 
-TRAIN_SET_PATH = osp.join(osp.abspath('.'), 'data_sets', '6000')
+TRAIN_SET_PATH = osp.join(osp.abspath('.'), 'data_sets', 'core_3000')
 TEST_SET_PATH = osp.join(osp.abspath('.'), 'data_sets', '6000_test')
 
 class SIXrayAnnotationTransform(object):
@@ -103,6 +103,8 @@ class SIXrayDetection(data.Dataset):
 
     def __init__(self, root,
                  image_sets,
+                 image_folder=None,
+                 annotation_folder=None,
                  transform=None, target_transform=SIXrayAnnotationTransform(),
                  dataset_name='Xray0723_bat_core_coreless'):
         self.root = root
@@ -110,9 +112,14 @@ class SIXrayDetection(data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.name = dataset_name
-        self._annopath = osp.join('%s' % self.root, 'Annotation', 'battery_%s.txt')
-        self._imgpath = osp.join('%s' % self.root, 'Image', 'battery_%s.jpg')
-        self.ids = list_ids(root, "jpg")
+        self.image_folder = image_folder
+        self.annotation_folder = annotation_folder
+        self.image_suffix = '.jpg'
+        self.anno_suffix = '.txt'
+        self.ids = list_ids(annotation_folder)
+        if self.image_folder is None or self.annotation_folder is None:
+            print('请指定image_folder和annotation_folder')
+            exit(1)
 
     def __getitem__(self, index):
         im, gt, h, w = self.pull_item(index)
@@ -123,15 +130,17 @@ class SIXrayDetection(data.Dataset):
 
     def pull_item(self, index):
         img_id = self.ids[index]
-        target = self._annopath % img_id  # 注释目录
-        img = cv2.imread(self._imgpath % img_id)
+        # 标注文件路径
+        target = osp.join(self.annotation_folder, img_id + self.anno_suffix)
+        # 图片路径
+        image_path = osp.join(self.image_folder, img_id + self.image_suffix)
+        img = cv2.imread(image_path)
 
         if img is None:
             print('\n错误:未找到图像文件\n')
             sys.exit(1)
 
         height, width, channels = img.shape
-
         if self.target_transform is not None:
             target = self.target_transform(target, width, height)
 
@@ -157,14 +166,16 @@ class SIXrayDetection(data.Dataset):
             PIL img
         '''
         img_id = self.ids[index]
-        return cv2.imread(self._imgpath % img_id, cv2.IMREAD_COLOR)
+        image_path = osp.join(self.image_folder, img_id + self.image_suffix)
+        return cv2.imread(image_path, cv2.IMREAD_COLOR)
 
     # 根据ID 获取标注
     def pull_annotation(self, index):
         img_id = self.ids[index]
         annos = []
         # 读取标注文件
-        with open(self._annopath % img_id, "r", encoding='utf-8') as file:
+        image_path = osp.join(self.image_folder, img_id + self.image_suffix)
+        with open(image_path, "r", encoding='utf-8') as file:
             lines = file.readlines()
             for line in lines:
                 temp = line.split()
@@ -188,8 +199,8 @@ class SIXrayDetection(data.Dataset):
                 eg: ('001718', [('dog', (96, 13, 438, 332))])
         '''
         img_id = self.ids[index]
-        anno = self._annopath % img_id
-        gt = self.target_transform(anno, 1, 1)
+        target = osp.join(self.annotation_folder, img_id + self.anno_suffix)
+        gt = self.target_transform(target, 1, 1)
 
         res = []
         # gt = [[173.0, 100.0, 348.0, 350.0, 14] , [173.0, 100.0, 348.0, 350.0, 14]]
@@ -218,14 +229,9 @@ def base_transform(image, size, mean):
     return x
 
 
-def list_ids(root, allTypes):
+def list_ids(root):
     res = []
-    re_img_id = re.compile(r'(\D+)(\d+).(\w+)')
-    types = allTypes.split(",")
     for root_temp, dirs, files in os.walk(root, topdown=True):
         for name in files:
-            match = re_img_id.match(name)
-            if match:
-                if match.groups()[2] in types:
-                    res.append(match.groups()[1])
+            res.append(str.replace(name, '.txt', ''))
     return res

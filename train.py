@@ -36,8 +36,10 @@ parser.add_argument('--weight_decay', default=5e-4, type=float, help='Weight dec
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--visdom', default=False, type=str2bool, help='Use visdom for loss visualization')
 parser.add_argument('--save_folder', default='weights/', help='Directory for saving checkpoint models')
-parser.add_argument('--imagesetfile', default=os.path.abspath('./img_ids.txt'), type=str,
-                    help='imageset file path to open')
+parser.add_argument('--imagesetfile', default=os.path.abspath('./img_ids.txt'), type=str, help='imageset file path to open')
+parser.add_argument('--image_folder', default=os.path.abspath('data_sets/core_3000/Image'), type=str)
+parser.add_argument('--annotation_folder', default=os.path.abspath('data_sets/core_3000/Annotation'), type=str)
+
 args = parser.parse_args()
 
 if torch.cuda.is_available():
@@ -55,7 +57,9 @@ if not os.path.exists(args.save_folder):
 
 
 def train():
-    dataset = SIXrayDetection(root=args.dataset_root, image_sets=args.imagesetfile, transform=SSDAugmentation(x_ray['min_dim'], MEANS))
+    dataset = SIXrayDetection(root=args.dataset_root, image_sets=args.imagesetfile,
+                              image_folder=args.image_folder, annotation_folder=args.annotation_folder,
+                              transform=SSDAugmentation(x_ray['min_dim'], MEANS))
     if args.visdom:
         import visdom
         viz = visdom.Visdom()

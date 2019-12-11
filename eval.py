@@ -40,6 +40,8 @@ parser.add_argument('--dataset_root', default=TEST_SET_PATH, help='Dataset root 
 parser.add_argument('--cleanup', default=True, type=str2bool,
                     help='Cleanup and remove results files following eval')
 parser.add_argument('--imagesetfile', default="./img_ids.txt", type=str, help='imageset file path to open')
+parser.add_argument('--image_folder', default=os.path.abspath('data_sets/core_3000/Image'), type=str)
+parser.add_argument('--annotation_folder', default=os.path.abspath('data_sets/core_3000/Annotation'), type=str)
 
 args = parser.parse_args()
 
@@ -384,6 +386,8 @@ if __name__ == '__main__':
     print('Finished loading model!')
     # load data
     dataset = SIXrayDetection(args.dataset_root, None,
+                           image_folder=args.image_folder,
+                           annotation_folder=args.annotation_folder,
                            transform=BaseTransform(300, dataset_mean),
                            target_transform=SIXrayAnnotationTransform())
     if args.cuda:
